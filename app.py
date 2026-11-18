@@ -1,173 +1,94 @@
-from collections import defaultdict
-import pandas as pd
 import requests
+import pandas as pd
 import streamlit as st
 
-st.set_page_config(
-    page_title="AFL Standings & Draft Board",
-    page_icon="🏈",
-    layout="wide",
-)
+LEAGUE_ID = "YOUR_LEAGUE_ID"  # Replace with your Armchair Football League ID
+BASE_URL = "https://api.sleeper.app/v1"
 
-st.title("🏈 AFL Standings & Draft Board")
-st.markdown("Live standings & draft board refreshed every 30 seconds via the Sleeper API.")
+# Cache expires every 4 minutes so the 5-minute fragment always gets fresh data
+@st.cache_data(ttl=240)
+def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
+    # 1. Get current NFL state to know how many weeks have been played
+    state = requests.get(f"{BASE_URL}/state/nfl").json()
+    current_week = state.get("week", 1)
 
-league_id = st.sidebar.text_input("Sleeper League ID:", "1314874337139904512")
+    # 2. Fetch users and rosters
+    users = requests.get(f"{BASE_URL}/league/{league_id}/users").json()
+    rosters = requests.get(f"{BASE_URL}/league/{league_id}/rosters").json()
 
-
-@st.cache_data(ttl=30)
-def fetch_league_data(lid):
-    league_res = requests.get(f"https://api.sleeper.app/v1/league/{lid}")
-    if league_res.status_code != 200 or not league_res.json():
-        return None, "League not found or invalid League ID."
-
-    league_data = league_res.json()
-    nfl_res = requests.get("https://api.sleeper.app/v1/state/nfl")
-    nfl_state = nfl_res.json() if nfl_res.status_code == 200 else {"week": 1}
-
-    current_week = nfl_state.get("week", 1)
-    playoff_start = league_data.get("settings", {}).get("playoff_week_start", 15)
-
-    regular_season_weeks = (
-        playoff_start - 1
-        if (playoff_start and playoff_start > 1)
-        else max(1, min(current_week, 14))
-    )
-
-    starter_positions = [
-        p
-        for p in league_data.get("roster_positions", [])
-        if p not in ["BN", "IR", "TAXI"]
-    ]
-    num_starters = len(starter_positions)
-
-    users_res = requests.get(f"https://api.sleeper.app/v1/league/{lid}/users")
-    users = users_res.json() if users_res.status_code == 200 else []
-    user_names = {
-        u.get("user_id"): u.get("display_name", u.get("username", "Unknown"))
+    user_map = {
+        u["user_id"]: u.get("metadata", {}).get("team_name") or u["display_name"]
         for u in users
     }
 
-    rosters_res = requests.get(
-        f"https://api.sleeper.app/v1/league/{lid}/rosters"
-    ).json()
-
-    roster_to_owner = {}
-    roster_records = {}
-    roster_sort_data = {}
-
-    for r in rosters_res:
-        rid = r.get("roster_id")
-        oid = r.get("owner_id")
-        owner_name = user_names.get(oid, f"Team {rid}")
-        roster_to_owner[rid] = owner_name
-
+    # Initialize team tracking dictionary
+    teams = {}
+    for r in rosters:
+        r_id = r["roster_id"]
         settings = r.get("settings", {})
-        wins = settings.get("wins", 0)
-        losses = settings.get("losses", 0)
-        ties = settings.get("ties", 0)
-        fpts = settings.get("fpts", 0) + (settings.get("fpts_decimal", 0) / 100.0)
+        
+        # Sleeper natively stores season Max PF in settings as ppts + ppts_decimal
+        max_pf = settings.get("ppts", 0) + (settings.get("ppts_decimal", 0) / 100.0)
+        
+        teams[r_id] = {
+            "Roster ID": r_id,
+            "Team": user_map.get(r.get("owner_id"), f"Team {r_id}"),
+            "Wins": settings.get("wins", 0),
+            "Losses": settings.get("losses", 0),
+            "Points For (Starters)": 0.0,
+            "Full-Roster Total PF": 0.0,
+            "Max PF (Sleeper)": round(max_pf, 2),
+        }
 
-        roster_sort_data[rid] = {"wins": wins, "losses": losses, "ties": ties, "fpts": fpts}
-
-        if ties > 0:
-            roster_records[rid] = f"{wins}-{losses}-{ties}"
-        else:
-            roster_records[rid] = f"{wins}-{losses}"
-
-    total_bench_pf = defaultdict(float)
-    max_pf = defaultdict(float)
-
-    for week in range(1, regular_season_weeks + 1):
-        res = requests.get(
-            f"https://api.sleeper.app/v1/league/{lid}/matchups/{week}"
-        )
-        if res.status_code != 200 or not res.json():
+    # 3. Loop through completed/active regular season weeks to sum Starters & Full-Roster PF
+    # Adjust range if your regular season ends at Week 14
+    max_reg_week = min(current_week, 14)
+    for week in range(1, max_reg_week + 1):
+        matchups = requests.get(f"{BASE_URL}/league/{league_id}/matchups/{week}").json()
+        if not matchups:
             continue
+            
+        for m in matchups:
+            r_id = m["roster_id"]
+            if r_id not in teams:
+                continue
+            
+            # Starters points for the week
+            starter_pts = m.get("points") or 0.0
+            
+            # All rostered players (Starters + Bench) points for the week
+            players_pts_dict = m.get("players_points") or {}
+            full_roster_pts = sum(players_pts_dict.values())
+            
+            teams[r_id]["Points For (Starters)"] += starter_pts
+            teams[r_id]["Full-Roster Total PF"] += full_roster_pts
 
-        for team in res.json():
-            rid = team.get("roster_id")
-            pts = team.get("players_points", {})
-            if rid and pts:
-                total_bench_pf[rid] += sum(pts.values())
-                sorted_scores = sorted(pts.values(), reverse=True)
-                max_pf[rid] += sum(sorted_scores[:num_starters])
+    # 4. Format into a clean DataFrame
+    df = pd.DataFrame(teams.values())
+    df["Points For (Starters)"] = df["Points For (Starters)"].round(2)
+    df["Full-Roster Total PF"] = df["Full-Roster Total PF"].round(2)
+    df["Bench Points Only"] = (df["Full-Roster Total PF"] - df["Points For (Starters)"]).round(2)
+    
+    return df
 
-    data = []
-    for rid, owner in roster_to_owner.items():
-        s = roster_sort_data[rid]
-        data.append({
-            "Team": owner,
-            "Record": roster_records.get(rid, "0-0"),
-            "Wins": s["wins"],
-            "Ties": s["ties"],
-            "FPTS": s["fpts"],
-            "Max PF Float": round(max_pf[rid], 2),
-            "Total PF Float": round(total_bench_pf[rid], 2),
-            "Max PF": f"{max_pf[rid]:,.2f}",
-            "Total PF": f"{total_bench_pf[rid]:,.2f}",
-        })
+# Auto-refresh this section every 5 minutes (300 seconds) without full page reload
+@st.fragment(run_every="5m")
+def render_live_standings():
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.subheader("Live Standings & Draft Order Metrics")
+    with col2:
+        if st.button("Force Sync Now"):
+            st.cache_data.clear()
+            st.rerun(scope="fragment")
 
-    return pd.DataFrame(data), None
+    df = fetch_sleeper_standings(LEAGUE_ID)
 
+    # Toggle which metric determines projected rookie draft order (lowest score = 1.01)
+    sort_metric = st.radio(
+        "Sort Draft Order By (Lowest = 1.01):",
+        options=["Full-Roster Total PF", "Max PF (Sleeper)", "Points For (Starters)"],
+        horizontal=True
+    )
 
-if league_id:
-    df, error = fetch_league_data(league_id)
-
-    if error:
-        st.error(error)
-    elif df is not None and not df.empty:
-        # 1. League Standings (Tightened)
-        st.subheader("🏆 League Standings")
-
-        df_standings = (
-            df.sort_values(by=["Wins", "Ties", "FPTS"], ascending=[False, False, False])
-            .reset_index(drop=True)
-            .copy()
-        )
-        df_standings.index += 1
-        df_standings.index.name = "Rank"
-
-        c1, c2, c3 = st.columns([1, 2, 1])
-        with c2:
-            st.table(df_standings[["Team", "Record"]])
-
-        st.markdown("---")
-
-        # 2. Rookie Draft Order (Tightened)
-        st.subheader("📋 Rookie Draft Order")
-        st.caption("Lowest Max PF determines rookie pick position.")
-
-        df_draft = (
-            df.sort_values(by="Max PF Float", ascending=True)
-            .reset_index(drop=True)
-            .copy()
-        )
-        df_draft.index += 1
-        df_draft.index = [f"1.{i:02d}" for i in df_draft.index]
-        df_draft.index.name = "Pick"
-
-        d1, d2, d3 = st.columns([1, 2, 1])
-        with d2:
-            st.table(df_draft[["Team", "Max PF", "Record"]])
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # 3. Total PF (Tightened)
-        st.subheader("📈 Total PF (Reverse Order)")
-        st.caption("Lowest Total PF to highest Total PF.")
-
-        df_total = (
-            df.sort_values(by="Total PF Float", ascending=True)
-            .reset_index(drop=True)
-            .copy()
-        )
-        df_total.index += 1
-        df_total.index = [f"1.{i:02d}" for i in df_total.index]
-        df_total.index.name = "Pick"
-
-        t1, t2, t3 = st.columns([1, 2, 1])
-        with t2:
-            st.table(df_total[["Team", "Total PF", "Record"]])
-    else:
-        st.warning("No data found for this league ID.")
+    df_sorted = df.sort_values(by=sort_metric, ascending=True).reset_index(

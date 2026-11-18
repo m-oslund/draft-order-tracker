@@ -8,18 +8,18 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Custom CSS for title/subheading sizing and spacing ---
+# --- Custom CSS for balanced title and subheading sizes ---
 st.markdown(
     """
     <style>
-    /* Scale down the main page title slightly */
+    /* Main Title size (in between original and previous smaller) */
     h1 {
-        font-size: 2.2rem !important;
+        font-size: 2.5rem !important;
         padding-bottom: 0rem !important;
     }
-    /* Scale up the subheading */
+    /* Subheading size (forced larger) */
     h3 {
-        font-size: 1.5rem !important;
+        font-size: 1.75rem !important;
         color: #fafafa !important;
     }
     </style>

@@ -3,7 +3,7 @@ import requests
 import streamlit as st
 
 st.set_page_config(
-    page_title="Armchair Football League - Draft Order Tracker",
+    page_title="Armchair Football League",
     page_icon="🏈",
     layout="wide",
 )

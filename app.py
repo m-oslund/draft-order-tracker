@@ -8,34 +8,6 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Custom CSS for tight column spacing and left-alignment ---
-st.markdown(
-    """
-    <style>
-    table {
-        width: auto !important;
-        border-collapse: collapse !important;
-        margin-top: 10px !important;
-        margin-bottom: 20px !important;
-    }
-    th {
-        text-align: left !important;
-        padding: 4px 6px !important;
-        white-space: nowrap !important;
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
-    }
-    td {
-        text-align: left !important;
-        padding: 4px 6px !important;
-        white-space: nowrap !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-    }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
-
 LEAGUE_ID = "1314874337139904512"
 BASE_URL = "https://api.sleeper.app/v1"
 
@@ -204,8 +176,8 @@ display_cols = [
     "W/L",
 ]
 
-# Render table with tight column spacing
-st.markdown(
-    df_sorted[display_cols].to_html(escape=False, index=False),
-    unsafe_allow_html=True,
+st.dataframe(
+    df_sorted[display_cols],
+    use_container_width=True,
+    hide_index=True,
 )

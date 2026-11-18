@@ -133,4 +133,49 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
   return df
 
 
-#
+# --- Main UI ---
+st.title("🏈 Armchair Football League — Draft Order Tracker")
+
+col1, col2 = st.columns([4, 1])
+with col1:
+  st.subheader("Live Standings & Rookie Draft Order")
+  st.caption("Data refreshes from Sleeper every 4 minutes or on manual sync.")
+with col2:
+  if st.button("Force Sync Now", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
+
+try:
+  with st.spinner("Fetching Sleeper API data..."):
+    df = fetch_sleeper_standings(LEAGUE_ID)
+except Exception as e:
+  st.error(f"Error connecting to Sleeper API: {e}")
+  st.stop()
+
+sort_metric = st.radio(
+    "Sort Draft Order By (Lowest Score = 1.01):",
+    options=[
+        "Total PF (Draft Order)",
+        "Max PF (Best Ball)",
+        "Points For (Starters)",
+    ],
+    horizontal=True,
+)
+
+df_sorted = df.sort_values(by=sort_metric, ascending=True).reset_index(drop=True)
+df_sorted.insert(0, "Pick", [f"1.{i + 1:02d}" for i in range(len(df_sorted))])
+
+display_cols = [
+    "Pick",
+    "Username",
+    "Total PF (Draft Order)",
+    "Max PF (Best Ball)",
+    "Points For (Starters)",
+    "W/L",
+]
+
+st.dataframe(
+    df_sorted[display_cols],
+    use_container_width=True,
+    hide_index=True,
+)

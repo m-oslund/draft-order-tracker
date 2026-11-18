@@ -3,7 +3,7 @@ import requests
 import streamlit as st
 
 st.set_page_config(
-    page_title="Armchair Football League",
+    page_title="Armchair Football League - Draft Order Tracker",
     page_icon="🏈",
     layout="wide",
 )
@@ -133,11 +133,11 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
 
 
 # --- Main UI ---
-st.title("🏈 Armchair Football League")
+st.title("🏈 Armchair Football League — Draft Order Tracker")
 
 col1, col2 = st.columns([4, 1])
 with col1:
-  st.subheader("Live Standings & Rookie Draft Order")
+  st.subheader("Draft Order & Points Tracker")
   st.caption(
       "Data syncs from Sleeper. Use the button on the right to force an instant"
       " refresh."
@@ -155,7 +155,7 @@ except Exception as e:
   st.stop()
 
 sort_metric = st.radio(
-    "Sort Draft Order By:",
+    "Sort Draft Order By (Lowest Score = 1.01):",
     options=[
         "Total PF (Draft Order)",
         "Max PF (Best Ball)",

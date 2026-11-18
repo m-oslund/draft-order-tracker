@@ -1,7 +1,6 @@
 import pandas as pd
 import requests
 import streamlit as st
-import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="Armchair Football League - Draft Order Tracker",
@@ -9,7 +8,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Custom CSS for balanced title/subheading and JS for URL hash ---
+# --- Custom CSS for balanced title and subheading sizes ---
 st.markdown(
     """
     <style>
@@ -22,12 +21,6 @@ st.markdown(
         color: #fafafa !important;
     }
     </style>
-    <script>
-        // Force URL hash to draft-order-tracker if it doesn't match
-        if (window.location.hash !== "#draft-order-tracker") {
-            window.location.hash = "draft-order-tracker";
-        }
-    </script>
 """,
     unsafe_allow_html=True,
 )
@@ -97,8 +90,8 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
         "Roster ID": r_id,
         "Username": user_map.get(r.get("owner_id"), f"User {r_id}"),
         "W/L": f"{wins}-{losses}",
-        "Points For (Starters)": 0.0,
         "Total PF (Draft Order)": 0.0,
+        "Points For (Starters)": 0.0,
         "Max PF (Best Ball)": round(max_pf, 2),
     }
 
@@ -122,8 +115,8 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
       players_pts_dict = m.get("players_points") or {}
       full_roster_pts = sum(players_pts_dict.values())
 
-      teams[r_id]["Points For (Starters)"] += starter_pts
       teams[r_id]["Total PF (Draft Order)"] += full_roster_pts
+      teams[r_id]["Points For (Starters)"] += starter_pts
 
   df = pd.DataFrame(teams.values())
   df["user_lower"] = df["Username"].str.lower()
@@ -164,8 +157,8 @@ sort_metric = st.radio(
     "Sort Draft Order By:",
     options=[
         "Total PF (Draft Order)",
-        "Max PF (Best Ball)",
         "Points For (Starters)",
+        "Max PF (Best Ball)",
     ],
     horizontal=True,
 )
@@ -177,8 +170,8 @@ display_cols = [
     "Pick",
     "Username",
     "Total PF (Draft Order)",
-    "Max PF (Best Ball)",
     "Points For (Starters)",
+    "Max PF (Best Ball)",
     "W/L",
 ]
 

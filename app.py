@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide",
 )
 
-LEAGUE_ID = "YOUR_LEAGUE_ID"  # <-- Make sure your actual League ID is pasted here
+LEAGUE_ID = "1314874337139904512"  # <-- Make sure your actual League ID is pasted here
 BASE_URL = "https://api.sleeper.app/v1"
 
 

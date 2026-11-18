@@ -137,7 +137,6 @@ st.title("🏈 Armchair Football League — Draft Order Tracker")
 
 col1, col2 = st.columns([4, 1])
 with col1:
-  st.subheader("Live Standings & Rookie Draft Order")
   st.caption(
       "Data syncs from Sleeper. Use the button on the right to force an instant"
       " refresh."

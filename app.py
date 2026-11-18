@@ -155,7 +155,7 @@ except Exception as e:
   st.stop()
 
 sort_metric = st.radio(
-    "Sort Draft Order By (Lowest Score = 1.01):",
+    "Sort Draft Order By:",
     options=[
         "Total PF (Draft Order)",
         "Max PF (Best Ball)",

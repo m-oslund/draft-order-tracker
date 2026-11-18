@@ -121,7 +121,7 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
   df = pd.DataFrame(teams.values())
   df["user_lower"] = df["Username"].str.lower()
 
-  # Apply starting baseline offsets without rigid minimum clamps
+  # Apply starting baseline offsets
   df["offset"] = df["user_lower"].map(TOTAL_PF_OFFSETS).fillna(0.0)
   df["Total PF (Draft Order)"] = (
       df["Total PF (Draft Order)"] + df["offset"]

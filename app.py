@@ -1,6 +1,7 @@
 import pandas as pd
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(
     page_title="Armchair Football League - Draft Order Tracker",
@@ -8,7 +9,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Custom CSS for balanced title and subheading sizes ---
+# --- Custom CSS for balanced title/subheading and JS for URL hash ---
 st.markdown(
     """
     <style>
@@ -21,6 +22,12 @@ st.markdown(
         color: #fafafa !important;
     }
     </style>
+    <script>
+        // Force URL hash to draft-order-tracker if it doesn't match
+        if (window.location.hash !== "#draft-order-tracker") {
+            window.location.hash = "draft-order-tracker";
+        }
+    </script>
 """,
     unsafe_allow_html=True,
 )
@@ -132,12 +139,11 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
 
 
 # --- Main UI ---
-# Setting the title to generate the #draft-order-tracker URL slug cleanly
-st.title("🏈 Draft Order Tracker")
+st.title("🏈 Armchair Football League")
 
 col1, col2 = st.columns([4, 1])
 with col1:
-  st.subheader("Armchair Football League")
+  st.subheader("Draft Order & Points Tracker")
   st.caption(
       "Data syncs from Sleeper. Use the button on the right to force an instant"
       " refresh."

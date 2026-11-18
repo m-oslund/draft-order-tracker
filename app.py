@@ -8,23 +8,28 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Custom CSS to make columns compact and left-aligned ---
+# --- Custom CSS to add clean padding and left-alignment ---
 st.markdown(
     """
     <style>
     table {
         width: auto !important;
         border-collapse: collapse !important;
+        margin-top: 10px !important;
+        margin-bottom: 20px !important;
     }
     th {
         text-align: left !important;
-        padding: 6px 14px !important;
+        padding: 12px 20px !important;
         white-space: nowrap !important;
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
     }
     td {
         text-align: left !important;
-        padding: 6px 14px !important;
+        padding: 12px 20px !important;
         white-space: nowrap !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
     </style>
 """,
@@ -199,7 +204,7 @@ display_cols = [
     "W/L",
 ]
 
-# Render compact table
+# Render padded table
 st.markdown(
     df_sorted[display_cols].to_html(escape=False, index=False),
     unsafe_allow_html=True,

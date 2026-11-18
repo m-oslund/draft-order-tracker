@@ -8,16 +8,21 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Custom CSS to left-justify all table columns ---
+# --- Custom CSS to force left-alignment on HTML tables ---
 st.markdown(
     """
     <style>
-    /* Left align all headers and cells in dataframes */
-    thead tr th {
+    table {
+        width: 100% !important;
         text-align: left !important;
     }
-    tbody tr td {
+    th {
         text-align: left !important;
+        padding: 8px !important;
+    }
+    td {
+        text-align: left !important;
+        padding: 8px !important;
     }
     </style>
 """,
@@ -192,8 +197,8 @@ display_cols = [
     "W/L",
 ]
 
-st.dataframe(
-    df_sorted[display_cols],
-    use_container_width=True,
-    hide_index=True,
+# Render as HTML to cleanly enforce left-alignment across all columns
+st.markdown(
+    df_sorted[display_cols].to_html(escape=False, index=False),
+    unsafe_allow_html=True,
 )

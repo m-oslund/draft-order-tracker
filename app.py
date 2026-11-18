@@ -11,8 +11,21 @@ st.set_page_config(
 LEAGUE_ID = "1314874337139904512"
 BASE_URL = "https://api.sleeper.app/v1"
 
-# Offsets applied ONLY to Total PF (Draft Order) so live API updates
-# keep adding every week while preserving the exact target draft order.
+# Exact target order from 1.01 to 1.10
+TARGET_ORDER = [
+    "weediatrician",
+    "tfugal",
+    "ogghostly",
+    "davewalker124",
+    "oslundd",
+    "mandieoslund",
+    "brotherlyshove51",
+    "moslund",
+    "noelleflint",
+    "taylordeforge",
+]
+
+# Starting baseline offsets
 TOTAL_PF_OFFSETS = {
     "weediatrician": 0.0,
     "tfugal": -350.0,
@@ -25,6 +38,9 @@ TOTAL_PF_OFFSETS = {
     "noelleflint": 0.0,
     "taylordeforge": 350.0,
 }
+
+# Minimum point gap enforced between consecutive picks even during massive boom weeks
+MIN_GAP = 25.0
 
 
 @st.cache_data(ttl=240)
@@ -89,12 +105,29 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
       teams[r_id]["Total PF (Draft Order)"] += full_roster_pts
 
   df = pd.DataFrame(teams.values())
+  df["user_lower"] = df["Username"].str.lower()
 
-  # Apply offsets ONLY to Total PF (Draft Order)
-  df["offset"] = df["Username"].str.lower().map(TOTAL_PF_OFFSETS).fillna(0.0)
-  df["Total PF (Draft Order)"] = (
-      df["Total PF (Draft Order)"] + df["offset"]
-  ).round(2)
+  # 1. Apply starting baseline offsets
+  df["offset"] = df["user_lower"].map(TOTAL_PF_OFFSETS).fillna(0.0)
+  df["Total PF (Draft Order)"] = df["Total PF (Draft Order)"] + df["offset"]
+
+  # 2. Dynamic boom-week protection: guarantee each subsequent team in TARGET_ORDER
+  # remains at least MIN_GAP points higher than the team ahead of them
+  for i in range(1, len(TARGET_ORDER)):
+    prev_user = TARGET_ORDER[i - 1]
+    curr_user = TARGET_ORDER[i]
+
+    prev_mask = df["user_lower"] == prev_user
+    curr_mask = df["user_lower"] == curr_user
+
+    if prev_mask.any() and curr_mask.any():
+      prev_score = df.loc[prev_mask, "Total PF (Draft Order)"].values[0]
+      curr_score = df.loc[curr_mask, "Total PF (Draft Order)"].values[0]
+
+      if curr_score < prev_score + MIN_GAP:
+        df.loc[curr_mask, "Total PF (Draft Order)"] = prev_score + MIN_GAP
+
+  df["Total PF (Draft Order)"] = df["Total PF (Draft Order)"].round(2)
   df["Points For (Starters)"] = df["Points For (Starters)"].round(2)
 
   return df

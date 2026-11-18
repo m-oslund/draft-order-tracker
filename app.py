@@ -8,6 +8,25 @@ st.set_page_config(
     layout="wide",
 )
 
+# --- Custom CSS for title/subheading sizing and spacing ---
+st.markdown(
+    """
+    <style>
+    /* Scale down the main page title slightly */
+    h1 {
+        font-size: 2.2rem !important;
+        padding-bottom: 0rem !important;
+    }
+    /* Scale up the subheading */
+    h3 {
+        font-size: 1.5rem !important;
+        color: #fafafa !important;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
+
 LEAGUE_ID = "1314874337139904512"
 BASE_URL = "https://api.sleeper.app/v1"
 
@@ -133,7 +152,7 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
 
 
 # --- Main UI ---
-st.title("🏈 Armchair Football League — Draft Order Tracker")
+st.title("🏈 Armchair Football League")
 
 col1, col2 = st.columns([4, 1])
 with col1:
@@ -155,7 +174,7 @@ except Exception as e:
   st.stop()
 
 sort_metric = st.radio(
-    "Sort Draft Order By (Lowest Score = 1.01):",
+    "Sort Draft Order By:",
     options=[
         "Total PF (Draft Order)",
         "Max PF (Best Ball)",

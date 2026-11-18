@@ -12,12 +12,10 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Main Title size (in between original and previous smaller) */
     h1 {
         font-size: 2.5rem !important;
         padding-bottom: 0rem !important;
     }
-    /* Subheading size (forced larger) */
     h3 {
         font-size: 1.75rem !important;
         color: #fafafa !important;
@@ -57,9 +55,6 @@ TOTAL_PF_OFFSETS = {
     "noelleflint": 0.0,
     "taylordeforge": 350.0,
 }
-
-# Minimum point gap enforced between consecutive picks even during massive boom weeks
-MIN_GAP = 25.0
 
 
 @st.cache_data(ttl=3600)
@@ -126,26 +121,11 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
   df = pd.DataFrame(teams.values())
   df["user_lower"] = df["Username"].str.lower()
 
-  # 1. Apply starting baseline offsets
+  # Apply starting baseline offsets without rigid 25-point minimum clamps
   df["offset"] = df["user_lower"].map(TOTAL_PF_OFFSETS).fillna(0.0)
-  df["Total PF (Draft Order)"] = df["Total PF (Draft Order)"] + df["offset"]
-
-  # 2. Dynamic boom-week protection
-  for i in range(1, len(TARGET_ORDER)):
-    prev_user = TARGET_ORDER[i - 1]
-    curr_user = TARGET_ORDER[i]
-
-    prev_mask = df["user_lower"] == prev_user
-    curr_mask = df["user_lower"] == curr_user
-
-    if prev_mask.any() and curr_mask.any():
-      prev_score = df.loc[prev_mask, "Total PF (Draft Order)"].values[0]
-      curr_score = df.loc[curr_mask, "Total PF (Draft Order)"].values[0]
-
-      if curr_score < prev_score + MIN_GAP:
-        df.loc[curr_mask, "Total PF (Draft Order)"] = prev_score + MIN_GAP
-
-  df["Total PF (Draft Order)"] = df["Total PF (Draft Order)"].round(2)
+  df["Total PF (Draft Order)"] = (
+      df["Total PF (Draft Order)"] + df["offset"]
+  ).round(2)
   df["Points For (Starters)"] = df["Points For (Starters)"].round(2)
 
   return df
@@ -156,7 +136,7 @@ st.title("🏈 Armchair Football League")
 
 col1, col2 = st.columns([4, 1])
 with col1:
-  st.subheader("Draft Order & Points Tracker")
+  st.subheader("Draft Order Tracker")
   st.caption(
       "Data syncs from Sleeper. Use the button on the right to force an instant"
       " refresh."

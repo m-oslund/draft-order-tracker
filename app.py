@@ -132,11 +132,12 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
 
 
 # --- Main UI ---
-st.title("🏈 Armchair Football League")
+# Setting the title to generate the #draft-order-tracker URL slug cleanly
+st.title("🏈 Draft Order Tracker")
 
 col1, col2 = st.columns([4, 1])
 with col1:
-  st.subheader("Draft Order & Points Tracker")
+  st.subheader("Armchair Football League")
   st.caption(
       "Data syncs from Sleeper. Use the button on the right to force an instant"
       " refresh."

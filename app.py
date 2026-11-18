@@ -1,16 +1,12 @@
 import pandas as pd
 import requests
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(
     page_title="Armchair Football League - Draft Order Tracker",
     page_icon="🏈",
     layout="wide",
 )
-
-# Auto-refresh the entire app every 30 seconds (30,000 milliseconds)
-st_autorefresh(interval=30000, key="datasync_refresh")
 
 LEAGUE_ID = "1314874337139904512"
 BASE_URL = "https://api.sleeper.app/v1"
@@ -47,7 +43,7 @@ TOTAL_PF_OFFSETS = {
 MIN_GAP = 25.0
 
 
-@st.cache_data(ttl=20)  # TTL set low so cache clears before every 30s poll
+@st.cache_data(ttl=3600)
 def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
   state_resp = requests.get(f"{BASE_URL}/state/nfl", timeout=10)
   state_resp.raise_for_status()
@@ -142,7 +138,10 @@ st.title("🏈 Armchair Football League — Draft Order Tracker")
 col1, col2 = st.columns([4, 1])
 with col1:
   st.subheader("Live Standings & Rookie Draft Order")
-  st.caption("Auto-syncs with Sleeper every 30 seconds.")
+  st.caption(
+      "Data syncs from Sleeper. Use the button on the right to force an instant"
+      " refresh."
+  )
 with col2:
   if st.button("Force Sync Now", use_container_width=True):
     st.cache_data.clear()

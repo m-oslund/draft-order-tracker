@@ -8,23 +8,6 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Custom CSS to increase font size of the sort selector ---
-st.markdown(
-    """
-    <style>
-    /* Increase font size of the radio group label and options */
-    div[data-testid="stRadio"] label p {
-        font-size: 1.15rem !important;
-        font-weight: 600 !important;
-    }
-    div[data-testid="stRadio"] div[role="radiogroup"] label span {
-        font-size: 1.05rem !important;
-    }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
-
 LEAGUE_ID = "1314874337139904512"
 BASE_URL = "https://api.sleeper.app/v1"
 
@@ -150,13 +133,11 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
 
 
 # --- Main UI ---
-st.title("🏈 Armchair Football League — Draft Order Tracker")
-
-# Added space between title and data sync controls
-st.markdown("<br>", unsafe_allow_html=True)
+st.title("🏈 Armchair Football League")
 
 col1, col2 = st.columns([4, 1])
 with col1:
+  st.subheader("Draft Order Tracker")
   st.caption(
       "Data syncs from Sleeper. Use the button on the right to force an instant"
       " refresh."

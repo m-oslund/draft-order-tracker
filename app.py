@@ -8,6 +8,22 @@ st.set_page_config(
     layout="wide",
 )
 
+# --- Custom CSS to left-justify all table columns ---
+st.markdown(
+    """
+    <style>
+    /* Left align all headers and cells in dataframes */
+    thead tr th {
+        text-align: left !important;
+    }
+    tbody tr td {
+        text-align: left !important;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
+
 LEAGUE_ID = "1314874337139904512"
 BASE_URL = "https://api.sleeper.app/v1"
 

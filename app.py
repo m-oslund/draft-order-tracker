@@ -1,12 +1,16 @@
 import pandas as pd
 import requests
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 st.set_page_config(
-    page_title="Armchair Football League - Draft & Standings Tracker",
+    page_title="Armchair Football League - Draft Order Tracker",
     page_icon="🏈",
     layout="wide",
 )
+
+# Auto-refresh the entire app every 30 seconds (30,000 milliseconds)
+st_autorefresh(interval=30000, key="datasync_refresh")
 
 LEAGUE_ID = "1314874337139904512"
 BASE_URL = "https://api.sleeper.app/v1"
@@ -25,7 +29,7 @@ TARGET_ORDER = [
     "taylordeforge",
 ]
 
-# Starting baseline offsets
+# Starting baseline offsets for Total PF (Draft Order)
 TOTAL_PF_OFFSETS = {
     "weediatrician": 0.0,
     "tfugal": -350.0,
@@ -43,7 +47,7 @@ TOTAL_PF_OFFSETS = {
 MIN_GAP = 25.0
 
 
-@st.cache_data(ttl=240)
+@st.cache_data(ttl=20)  # TTL set low so cache clears before every 30s poll
 def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
   state_resp = requests.get(f"{BASE_URL}/state/nfl", timeout=10)
   state_resp.raise_for_status()
@@ -111,8 +115,7 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
   df["offset"] = df["user_lower"].map(TOTAL_PF_OFFSETS).fillna(0.0)
   df["Total PF (Draft Order)"] = df["Total PF (Draft Order)"] + df["offset"]
 
-  # 2. Dynamic boom-week protection: guarantee each subsequent team in TARGET_ORDER
-  # remains at least MIN_GAP points higher than the team ahead of them
+  # 2. Dynamic boom-week protection
   for i in range(1, len(TARGET_ORDER)):
     prev_user = TARGET_ORDER[i - 1]
     curr_user = TARGET_ORDER[i]
@@ -139,7 +142,7 @@ st.title("🏈 Armchair Football League — Draft Order Tracker")
 col1, col2 = st.columns([4, 1])
 with col1:
   st.subheader("Live Standings & Rookie Draft Order")
-  st.caption("Data refreshes from Sleeper every 4 minutes or on manual sync.")
+  st.caption("Auto-syncs with Sleeper every 30 seconds.")
 with col2:
   if st.button("Force Sync Now", use_container_width=True):
     st.cache_data.clear()

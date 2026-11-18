@@ -8,21 +8,23 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Custom CSS to force left-alignment on HTML tables ---
+# --- Custom CSS to make columns compact and left-aligned ---
 st.markdown(
     """
     <style>
     table {
-        width: 100% !important;
-        text-align: left !important;
+        width: auto !important;
+        border-collapse: collapse !important;
     }
     th {
         text-align: left !important;
-        padding: 8px !important;
+        padding: 6px 14px !important;
+        white-space: nowrap !important;
     }
     td {
         text-align: left !important;
-        padding: 8px !important;
+        padding: 6px 14px !important;
+        white-space: nowrap !important;
     }
     </style>
 """,
@@ -197,7 +199,7 @@ display_cols = [
     "W/L",
 ]
 
-# Render as HTML to cleanly enforce left-alignment across all columns
+# Render compact table
 st.markdown(
     df_sorted[display_cols].to_html(escape=False, index=False),
     unsafe_allow_html=True,

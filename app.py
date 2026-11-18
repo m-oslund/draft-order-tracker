@@ -11,7 +11,7 @@ st.set_page_config(
 LEAGUE_ID = "1314874337139904512"
 BASE_URL = "https://api.sleeper.app/v1"
 
-# Offsets applied ONLY to Full-Roster Total PF so live API updates
+# Offsets applied ONLY to Total PF (Draft Order) so live API updates
 # keep adding every week while preserving the exact target draft order.
 TOTAL_PF_OFFSETS = {
     "weediatrician": 0.0,
@@ -61,7 +61,7 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
         "Username": user_map.get(r.get("owner_id"), f"User {r_id}"),
         "W/L": f"{wins}-{losses}",
         "Points For (Starters)": 0.0,
-        "Full-Roster Total PF": 0.0,
+        "Total PF (Draft Order)": 0.0,
         "Max PF": round(max_pf, 2),
     }
 
@@ -86,16 +86,14 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
       full_roster_pts = sum(players_pts_dict.values())
 
       teams[r_id]["Points For (Starters)"] += starter_pts
-      teams[r_id]["Full-Roster Total PF"] += full_roster_pts
+      teams[r_id]["Total PF (Draft Order)"] += full_roster_pts
 
   df = pd.DataFrame(teams.values())
 
-  # Apply offsets ONLY to Full-Roster Total PF
-  df["offset"] = (
-      df["Username"].str.lower().map(TOTAL_PF_OFFSETS).fillna(0.0)
-  )
-  df["Full-Roster Total PF"] = (
-      df["Full-Roster Total PF"] + df["offset"]
+  # Apply offsets ONLY to Total PF (Draft Order)
+  df["offset"] = df["Username"].str.lower().map(TOTAL_PF_OFFSETS).fillna(0.0)
+  df["Total PF (Draft Order)"] = (
+      df["Total PF (Draft Order)"] + df["offset"]
   ).round(2)
   df["Points For (Starters)"] = df["Points For (Starters)"].round(2)
 
@@ -105,50 +103,4 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
 # --- Main UI ---
 st.title("🏈 Armchair Football League — Draft Order Tracker")
 
-col1, col2 = st.columns([4, 1])
-with col1:
-  st.subheader("Live Standings & Rookie Draft Order")
-  st.caption("Data refreshes from Sleeper every 4 minutes or on manual sync.")
-with col2:
-  if st.button("Force Sync Now", use_container_width=True):
-    st.cache_data.clear()
-    st.rerun()
-
-try:
-  with st.spinner("Fetching Sleeper API data..."):
-    df = fetch_sleeper_standings(LEAGUE_ID)
-except Exception as e:
-  st.error(f"Error connecting to Sleeper API: {e}")
-  st.stop()
-
-sort_metric = st.radio(
-    "Sort Draft Order By (Lowest Score = 1.01):",
-    options=[
-        "Full-Roster Total PF",
-        "Max PF",
-        "Points For (Starters)",
-    ],
-    horizontal=True,
-)
-
-df_sorted = df.sort_values(by=sort_metric, ascending=True).reset_index(
-    drop=True
-)
-df_sorted.insert(
-    0, "Pick", [f"1.{i + 1:02d}" for i in range(len(df_sorted))]
-)
-
-display_cols = [
-    "Pick",
-    "Username",
-    "Full-Roster Total PF",
-    "Max PF",
-    "Points For (Starters)",
-    "W/L",
-]
-
-st.dataframe(
-    df_sorted[display_cols],
-    use_container_width=True,
-    hide_index=True,
-)
+col1, col2 = st.columns([4, 1

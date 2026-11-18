@@ -133,7 +133,7 @@ def fetch_sleeper_standings(league_id: str) -> pd.DataFrame:
 
 
 # --- Main UI ---
-st.title("🏈 Armchair Football League — Draft Order Tracker")
+st.title("🏈 Armchair Football League")
 
 col1, col2 = st.columns([4, 1])
 with col1:
